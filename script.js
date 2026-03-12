@@ -84,26 +84,6 @@ function generateCard() {
 }
 
 // ===== Export as PNG =====
-function getExportOptions(useFilter, pixelRatio) {
-  var opts = {
-    quality: 1,
-    pixelRatio: pixelRatio || 2,
-    backgroundColor: "#111111",
-    skipFonts: true,
-    width: smartCard.offsetWidth,
-    height: smartCard.offsetHeight,
-  };
-  if (useFilter) {
-    opts.filter = function (node) {
-      if (node.tagName === "CANVAS" && node.style && node.style.display === "none") {
-        return false;
-      }
-      return true;
-    };
-  }
-  return opts;
-}
-
 function triggerDownload(dataUrl) {
   var link = document.createElement("a");
   link.download =
@@ -112,8 +92,38 @@ function triggerDownload(dataUrl) {
   link.click();
 }
 
+function dataURLtoBlob(dataUrl) {
+  var parts = dataUrl.split(",");
+  var mimeMatch = parts[0].match(/:(.*?);/);
+  if (!mimeMatch) return null;
+  var mime = mimeMatch[1];
+  var binary = atob(parts[1]);
+  var array = new Uint8Array(binary.length);
+  for (var i = 0; i < binary.length; i++) {
+    array[i] = binary.charCodeAt(i);
+  }
+  return new Blob([array], { type: mime });
+}
+
+function shareCard(dataUrl) {
+  if (!navigator.share || !navigator.canShare) return false;
+  var blob = dataURLtoBlob(dataUrl);
+  if (!blob) return false;
+  var fileName = "بطاقة-معتكف-" + (cardName.textContent || "card") + ".png";
+  var file = new File([blob], fileName, { type: "image/png" });
+  if (!navigator.canShare({ files: [file] })) return false;
+  navigator.share({
+    files: [file],
+    title: "بطاقة المعتكف",
+  }).catch(function () {
+    // User cancelled or share failed — fall back to download
+    triggerDownload(dataUrl);
+  });
+  return true;
+}
+
 function downloadCard() {
-  if (typeof htmlToImage === "undefined") {
+  if (typeof html2canvas === "undefined") {
     alert("مكتبة التصدير غير متوفرة. يرجى التحقق من اتصال الإنترنت.");
     return;
   }
@@ -124,47 +134,26 @@ function downloadCard() {
   var originalText = downloadBtn.textContent;
   downloadBtn.textContent = "جاري التحميل...";
 
-  // Safari/mobile warm-up: first toPng call primes the rendering pipeline
-  htmlToImage
-    .toPng(smartCard, getExportOptions(true, 2))
-    .catch(function () {
-      // Warm-up failures are expected and harmless; continue to actual export
+  html2canvas(smartCard, {
+    scale: 2,
+    useCORS: true,
+    allowTaint: true,
+    backgroundColor: "#111111",
+    logging: false,
+  })
+    .then(function (canvas) {
+      var image = canvas.toDataURL("image/png");
+      // Try Share API on mobile, fall back to download
+      if (!shareCard(image)) {
+        triggerDownload(image);
+      }
+    })
+    .catch(function (error) {
+      console.error("Export error:", error);
+      alert("حدث خطأ أثناء تحميل الصورة. حاول مرة أخرى.");
     })
     .then(function () {
-      // Actual export: toPng with filter, high resolution
-      return htmlToImage
-        .toPng(smartCard, getExportOptions(true, 2))
-        .then(triggerDownload);
-    })
-    .catch(function (firstErr) {
-      console.warn("First export attempt failed:", firstErr);
-      // Retry without filter (simpler clone)
-      return htmlToImage
-        .toPng(smartCard, getExportOptions(false, 2))
-        .then(triggerDownload);
-    })
-    .catch(function (secondErr) {
-      console.warn("Second export attempt failed:", secondErr);
-      // Retry with lower resolution for memory-constrained devices
-      return htmlToImage
-        .toPng(smartCard, getExportOptions(false, 1))
-        .then(triggerDownload);
-    })
-    .catch(function (thirdErr) {
-      console.warn("Third export attempt failed:", thirdErr);
-      // Final fallback: use toCanvas directly at low resolution
-      return htmlToImage
-        .toCanvas(smartCard, getExportOptions(false, 1))
-        .then(function (canvas) {
-          triggerDownload(canvas.toDataURL("image/png"));
-        });
-    })
-    .catch(function (finalErr) {
-      console.error("All export attempts failed:", finalErr);
-      alert("حدث خطأ أثناء تحميل الصورة. يرجى المحاولة مرة أخرى أو استخدام لقطة شاشة.");
-    })
-    .finally(function () {
-      // Restore button state
+      // Restore button state (used instead of .finally for wider browser support)
       downloadBtn.disabled = false;
       downloadBtn.removeAttribute("aria-busy");
       downloadBtn.textContent = originalText;
