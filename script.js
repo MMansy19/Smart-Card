@@ -33,7 +33,7 @@ function generateQRCode(data) {
       height: 180,
       colorDark: "#0f766e",
       colorLight: "#ffffff",
-      correctLevel: QRCode.CorrectLevel.L,
+      correctLevel: QRCode.CorrectLevel.M,
     });
   } catch (e) {
     console.error("QR Code generation error:", e);
@@ -95,6 +95,15 @@ function downloadCard() {
       quality: 1,
       pixelRatio: 2,
       backgroundColor: "#111111",
+      skipFonts: true,
+      cacheBust: true,
+      filter: function (node) {
+        // Skip hidden canvas elements left by QR code renderer
+        if (node.tagName === "CANVAS" && node.style && node.style.display === "none") {
+          return false;
+        }
+        return true;
+      },
     })
     .then(function (dataUrl) {
       var link = document.createElement("a");
