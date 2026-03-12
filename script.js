@@ -120,6 +120,7 @@ function downloadCard() {
 
   // Disable button and show loading state
   downloadBtn.disabled = true;
+  downloadBtn.setAttribute("aria-busy", "true");
   var originalText = downloadBtn.textContent;
   downloadBtn.textContent = "جاري التحميل...";
 
@@ -127,7 +128,7 @@ function downloadCard() {
   htmlToImage
     .toPng(smartCard, getExportOptions(true, 2))
     .catch(function () {
-      return ""; // Ignore warm-up errors
+      // Warm-up failures are expected and harmless; continue to actual export
     })
     .then(function () {
       // Actual export: toPng with filter, high resolution
@@ -165,6 +166,7 @@ function downloadCard() {
     .finally(function () {
       // Restore button state
       downloadBtn.disabled = false;
+      downloadBtn.removeAttribute("aria-busy");
       downloadBtn.textContent = originalText;
     });
 }
