@@ -84,6 +84,32 @@ function generateCard() {
 }
 
 // ===== Export as PNG =====
+function getExportOptions(useFilter) {
+  var opts = {
+    quality: 1,
+    pixelRatio: 2,
+    backgroundColor: "#111111",
+    skipFonts: true,
+  };
+  if (useFilter) {
+    opts.filter = function (node) {
+      if (node.tagName === "CANVAS" && node.style && node.style.display === "none") {
+        return false;
+      }
+      return true;
+    };
+  }
+  return opts;
+}
+
+function triggerDownload(dataUrl) {
+  var link = document.createElement("a");
+  link.download =
+    "بطاقة-معتكف-" + (cardName.textContent || "card") + ".png";
+  link.href = dataUrl;
+  link.click();
+}
+
 function downloadCard() {
   if (typeof htmlToImage === "undefined") {
     alert("مكتبة التصدير غير متوفرة. يرجى التحقق من اتصال الإنترنت.");
@@ -91,30 +117,27 @@ function downloadCard() {
   }
 
   htmlToImage
-    .toPng(smartCard, {
-      quality: 1,
-      pixelRatio: 2,
-      backgroundColor: "#111111",
-      skipFonts: true,
-      cacheBust: true,
-      filter: function (node) {
-        // Skip hidden canvas elements left by QR code renderer
-        if (node.tagName === "CANVAS" && node.style && node.style.display === "none") {
-          return false;
-        }
-        return true;
-      },
+    .toPng(smartCard, getExportOptions(true))
+    .then(triggerDownload)
+    .catch(function (firstErr) {
+      console.warn("First export attempt failed:", firstErr);
+      // Retry without filter (simpler clone)
+      return htmlToImage
+        .toPng(smartCard, getExportOptions(false))
+        .then(triggerDownload);
     })
-    .then(function (dataUrl) {
-      var link = document.createElement("a");
-      link.download =
-        "بطاقة-معتكف-" + (cardName.textContent || "card") + ".png";
-      link.href = dataUrl;
-      link.click();
+    .catch(function (secondErr) {
+      console.warn("Second export attempt failed:", secondErr);
+      // Final fallback: use toCanvas directly
+      return htmlToImage
+        .toCanvas(smartCard, getExportOptions(false))
+        .then(function (canvas) {
+          triggerDownload(canvas.toDataURL("image/png"));
+        });
     })
-    .catch(function (err) {
-      console.error("Export error:", err);
-      alert("حدث خطأ أثناء تحميل الصورة");
+    .catch(function (finalErr) {
+      console.error("All export attempts failed:", finalErr);
+      alert("حدث خطأ أثناء تحميل الصورة. يرجى المحاولة مرة أخرى أو استخدام لقطة شاشة.");
     });
 }
 
