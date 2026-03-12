@@ -22,14 +22,23 @@ const STORAGE_KEY = "itikaf_saved_cards";
 // ===== QR Code Generation =====
 function generateQRCode(data) {
   qrCodeEl.innerHTML = "";
-  qrInstance = new QRCode(qrCodeEl, {
-    text: data,
-    width: 180,
-    height: 180,
-    colorDark: "#0f766e",
-    colorLight: "#ffffff",
-    correctLevel: QRCode.CorrectLevel.H,
-  });
+  if (typeof QRCode === "undefined") {
+    qrCodeEl.textContent = "QR غير متوفر";
+    return;
+  }
+  try {
+    qrInstance = new QRCode(qrCodeEl, {
+      text: data,
+      width: 180,
+      height: 180,
+      colorDark: "#0f766e",
+      colorLight: "#ffffff",
+      correctLevel: QRCode.CorrectLevel.L,
+    });
+  } catch (e) {
+    console.error("QR Code generation error:", e);
+    qrCodeEl.textContent = "QR غير متوفر";
+  }
 }
 
 // ===== Card Generation =====
