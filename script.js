@@ -84,12 +84,14 @@ function generateCard() {
 }
 
 // ===== Export as PNG =====
-function getExportOptions(useFilter) {
+function getExportOptions(useFilter, pixelRatio) {
   var opts = {
     quality: 1,
-    pixelRatio: 2,
+    pixelRatio: pixelRatio || 2,
     backgroundColor: "#111111",
     skipFonts: true,
+    width: smartCard.offsetWidth,
+    height: smartCard.offsetHeight,
   };
   if (useFilter) {
     opts.filter = function (node) {
@@ -116,21 +118,43 @@ function downloadCard() {
     return;
   }
 
+  // Disable button and show loading state
+  downloadBtn.disabled = true;
+  downloadBtn.setAttribute("aria-busy", "true");
+  var originalText = downloadBtn.textContent;
+  downloadBtn.textContent = "جاري التحميل...";
+
+  // Safari/mobile warm-up: first toPng call primes the rendering pipeline
   htmlToImage
-    .toPng(smartCard, getExportOptions(true))
-    .then(triggerDownload)
+    .toPng(smartCard, getExportOptions(true, 2))
+    .catch(function () {
+      // Warm-up failures are expected and harmless; continue to actual export
+    })
+    .then(function () {
+      // Actual export: toPng with filter, high resolution
+      return htmlToImage
+        .toPng(smartCard, getExportOptions(true, 2))
+        .then(triggerDownload);
+    })
     .catch(function (firstErr) {
       console.warn("First export attempt failed:", firstErr);
       // Retry without filter (simpler clone)
       return htmlToImage
-        .toPng(smartCard, getExportOptions(false))
+        .toPng(smartCard, getExportOptions(false, 2))
         .then(triggerDownload);
     })
     .catch(function (secondErr) {
       console.warn("Second export attempt failed:", secondErr);
-      // Final fallback: use toCanvas directly
+      // Retry with lower resolution for memory-constrained devices
       return htmlToImage
-        .toCanvas(smartCard, getExportOptions(false))
+        .toPng(smartCard, getExportOptions(false, 1))
+        .then(triggerDownload);
+    })
+    .catch(function (thirdErr) {
+      console.warn("Third export attempt failed:", thirdErr);
+      // Final fallback: use toCanvas directly at low resolution
+      return htmlToImage
+        .toCanvas(smartCard, getExportOptions(false, 1))
         .then(function (canvas) {
           triggerDownload(canvas.toDataURL("image/png"));
         });
@@ -138,6 +162,12 @@ function downloadCard() {
     .catch(function (finalErr) {
       console.error("All export attempts failed:", finalErr);
       alert("حدث خطأ أثناء تحميل الصورة. يرجى المحاولة مرة أخرى أو استخدام لقطة شاشة.");
+    })
+    .finally(function () {
+      // Restore button state
+      downloadBtn.disabled = false;
+      downloadBtn.removeAttribute("aria-busy");
+      downloadBtn.textContent = originalText;
     });
 }
 
