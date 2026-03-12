@@ -23,7 +23,7 @@ const STORAGE_KEY = "itikaf_saved_cards";
 function generateQRCode(data) {
   qrCodeEl.innerHTML = "";
   if (typeof QRCode === "undefined") {
-    qrCodeEl.textContent = "QR غير متوفر";
+    qrCodeEl.textContent = "فشل تحميل مكتبة QR";
     return;
   }
   try {
@@ -37,7 +37,7 @@ function generateQRCode(data) {
     });
   } catch (e) {
     console.error("QR Code generation error:", e);
-    qrCodeEl.textContent = "QR غير متوفر";
+    qrCodeEl.textContent = "فشل إنشاء رمز QR";
   }
 }
 
