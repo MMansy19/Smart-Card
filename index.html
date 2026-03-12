@@ -24,16 +24,34 @@
       </div>
       <div class="form-group">
         <label for="supervisorInput">اسم المسؤول</label>
-        <input type="text" id="supervisorInput" placeholder="مثال: أحمد عبدالله" />
+        <select id="supervisorInput">
+          <option value="">-- اختر المسؤول --</option>
+          <option value="مازن">مازن</option>
+          <option value="أحمد موسى">أحمد موسى</option>
+          <option value="محمد حسني">محمد حسني</option>
+          <option value="عبدالرحمن تاج">عبدالرحمن تاج</option>
+          <option value="محمد زكريا">محمد زكريا</option>
+          <option value="ش. أحمد فتحي">ش. أحمد فتحي</option>
+        </select>
       </div>
       <div class="form-row">
         <div class="form-group">
           <label for="roomInput">الغرفة</label>
-          <input type="text" id="roomInput" placeholder="مثال: قاعة 2" />
+          <select id="roomInput">
+            <option value="">-- اختر الغرفة --</option>
+            <option value="قاعة 1">قاعة 1</option>
+            <option value="قاعة 2">قاعة 2</option>
+            <option value="قاعة 3">قاعة 3</option>
+          </select>
         </div>
         <div class="form-group">
   <label for="floorInput">الدور</label>
-  <input type="text" id="floorInput" placeholder="مثال: الرابع" value="الدور الرابع" />
+  <select id="floorInput">
+    <option value="الدور الأول">الدور الأول</option>
+    <option value="الدور الثاني">الدور الثاني</option>
+    <option value="الدور الثالث">الدور الثالث</option>
+    <option value="الدور الرابع" selected>الدور الرابع</option>
+  </select>
 </div>
       </div>
       <div class="form-actions">
