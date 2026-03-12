@@ -94,7 +94,9 @@ function triggerDownload(dataUrl) {
 
 function dataURLtoBlob(dataUrl) {
   var parts = dataUrl.split(",");
-  var mime = parts[0].match(/:(.*?);/)[1];
+  var mimeMatch = parts[0].match(/:(.*?);/);
+  if (!mimeMatch) return null;
+  var mime = mimeMatch[1];
   var binary = atob(parts[1]);
   var array = new Uint8Array(binary.length);
   for (var i = 0; i < binary.length; i++) {
@@ -106,6 +108,7 @@ function dataURLtoBlob(dataUrl) {
 function shareCard(dataUrl) {
   if (!navigator.share || !navigator.canShare) return false;
   var blob = dataURLtoBlob(dataUrl);
+  if (!blob) return false;
   var fileName = "بطاقة-معتكف-" + (cardName.textContent || "card") + ".png";
   var file = new File([blob], fileName, { type: "image/png" });
   if (!navigator.canShare({ files: [file] })) return false;
